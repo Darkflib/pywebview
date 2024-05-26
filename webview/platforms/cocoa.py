@@ -11,7 +11,7 @@ from threading import Semaphore, Thread, main_thread
 import AppKit
 import Foundation
 import WebKit
-from objc import _objc, nil, registerMetaDataForSelector, selector, super
+from objc import _objc, nil, registerMetaDataForSelector, selector, super, YES
 from PyObjCTools import AppHelper
 
 from webview import (FOLDER_DIALOG, OPEN_DIALOG, SAVE_DIALOG, _settings, parse_file_type, windows, settings as webview_settings)
@@ -85,6 +85,21 @@ class BrowserView:
         def windowShouldClose_(self, window):
             i = BrowserView.get_instance('window', window)
             return BrowserView.should_close(i.pywebview_window)
+
+        def applicationSupportsSecureRestorableState_(self, application):
+            return YES
+
+        def window_willEncodeRestorableState_(self, window, coder):
+            # Encode any state information into the coder object.
+            # For example, you might encode the current URL of the webview:
+            url = self.webview.get_current_url()
+            coder.encodeObject_forKey_(url, "url")
+    
+        def window_didDecodeRestorableState_(self, window, coder):
+            # Decode the state information from the coder object and restore the state.
+            # For example, you might restore the URL of the webview:
+            url = coder.decodeObjectForKey_("url")
+            self.webview.load_url(url)
 
         def windowWillClose_(self, notification):
             # Delete the closed instance from the dict
